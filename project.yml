@@ -1,0 +1,44 @@
+name: DisplayRecall
+options:
+  bundleIdPrefix: com.zomeelee
+  deploymentTarget:
+    macOS: "14.0"
+  groupSortPosition: top
+settings:
+  base:
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    SWIFT_VERSION: "5.0"
+    ENABLE_HARDENED_RUNTIME: YES
+    DEVELOPMENT_TEAM: 793P3T7B34
+    CURRENT_PROJECT_VERSION: 3
+    MARKETING_VERSION: 0.1.2
+targets:
+  DisplayRecall:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.zomeelee.DisplayRecall
+        PRODUCT_NAME: DisplayRecall
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: DisplayRecall
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_NSHumanReadableCopyright: Copyright © 2026 zomeelee.
+        CODE_SIGN_STYLE: Automatic
+    scheme:
+      testTargets:
+        - DisplayRecallTests
+  DisplayRecallTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: DisplayRecall
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.zomeelee.DisplayRecallTests
+        GENERATE_INFOPLIST_FILE: YES

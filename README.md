@@ -1,0 +1,55 @@
+# DisplayRecall
+
+DisplayRecall 是一个本地运行的 macOS 菜单栏工具。它保存 Mac 内置屏与外接显示器上的普通窗口布局，并在另一台外接显示器接入后，按屏幕可用区域的比例自动恢复窗口。
+
+## 第一版范围
+
+- 支持 Mac 内置屏加一台外接屏。
+- 支持当前桌面中的普通、非最小化、非全屏窗口。
+- 手动保存布局，之后在显示器接入、分辨率变化或睡眠唤醒后自动恢复。
+- 系统显示器回调之外，每 1.5 秒检查一次拓扑；更换不同显示器时采用延迟多次校正。
+- 对外接屏应用菜单栏安全区修正；仅在系统明确报告窗口已 Zoom 时取消 Zoom，不会盲目切换窗口状态或退出全屏。
+- 窗口标题和文档地址只保存 SHA-256 摘要，不保存明文。
+- 所有数据保存在本机，不需要网络和屏幕录制权限。
+- 不使用私有 Spaces API。
+
+## 构建
+
+要求：Xcode 26 或兼容版本、XcodeGen。
+
+```sh
+xcodegen generate
+xcodebuild \
+  -project DisplayRecall.xcodeproj \
+  -scheme DisplayRecall \
+  -configuration Debug \
+  -derivedDataPath DerivedData \
+  build
+```
+
+构建后的 App 位于：
+
+```text
+DerivedData/Build/Products/Debug/DisplayRecall.app
+```
+
+首次启动后，需要在“系统设置 → 隐私与安全性 → 辅助功能”中允许 DisplayRecall 控制窗口。
+
+工程使用本机 Apple Development 证书进行稳定签名。不要增加
+`CODE_SIGNING_ALLOWED=NO` 或改为 ad-hoc 签名；macOS 会把辅助功能权限绑定到代码签名，临时签名在重新构建后会变成另一个权限身份。
+
+从旧的临时签名版本升级时，需要在辅助功能设置中删除旧的 DisplayRecall 项，启动新版本后重新添加并开启一次。之后使用同一开发证书重新构建，不需要重复授权。
+
+## 使用
+
+1. 连接外接显示器并排好窗口。
+2. 点击菜单栏中的 DisplayRecall 图标。
+3. 点击“保存当前双屏布局”。
+4. 以后接入任意一台外接显示器时，DisplayRecall 会把窗口按相对位置恢复。
+
+## 已知限制
+
+- macOS 没有公开接口让第三方可靠地把其他 App 的窗口移动到指定 Space，因此只保证当前可访问桌面。
+- 系统全屏窗口、最小化窗口、弹窗与模态面板会被忽略。
+- 不同 App 对辅助功能接口的支持不一致，少数窗口可能拒绝移动或强制最小尺寸。
+- 第一版不会自动启动已经关闭的 App，也不会恢复窗口前后层级。
