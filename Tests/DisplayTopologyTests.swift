@@ -121,6 +121,36 @@ final class DisplayTopologyTests: XCTestCase {
         XCTAssertEqual(result, visibleFrame)
     }
 
+    func testAutomaticRestoreRetryPolicyCoversLateWindowAvailability() {
+        let delays = AutomaticRestoreRetryPolicy.delaysInSeconds
+
+        XCTAssertLessThanOrEqual(delays.first ?? .max, 5)
+        XCTAssertGreaterThanOrEqual(delays.reduce(0, +), 120)
+        XCTAssertTrue(zip(delays, delays.dropFirst()).allSatisfy { pair in
+            pair.0 < pair.1
+        })
+    }
+
+    func testRefreshesConstraintWhenFullHeightTargetRemainsTooShort() {
+        XCTAssertTrue(
+            FullHeightConstraintRefreshPolicy.shouldRefresh(
+                actual: CGRect(x: 1440, y: -209, width: 937, height: 870),
+                target: CGRect(x: 1440, y: -389, width: 937.5, height: 1050),
+                displayFrame: CGRect(x: 1440, y: -389, width: 1875, height: 1050)
+            )
+        )
+    }
+
+    func testDoesNotZoomRefreshOrdinaryWindowHeight() {
+        XCTAssertFalse(
+            FullHeightConstraintRefreshPolicy.shouldRefresh(
+                actual: CGRect(x: 1440, y: -120, width: 900, height: 650),
+                target: CGRect(x: 1440, y: -150, width: 900, height: 700),
+                displayFrame: CGRect(x: 1440, y: -389, width: 1875, height: 1050)
+            )
+        )
+    }
+
     private func makeDisplay(
         id: CGDirectDisplayID,
         uuid: String,

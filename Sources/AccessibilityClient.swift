@@ -107,16 +107,70 @@ final class AccessibilityClient {
             return false
         }
 
+        if !alternateOrder,
+           let atomicResult = setRectIfSupported(frame, element: element) {
+            logger.debug("Atomic AXFrame write result: \(atomicResult)")
+            if atomicResult {
+                return true
+            }
+        }
+
         if alternateOrder {
-            let positionResult = setPoint(frame.origin, element: element, attribute: kAXPositionAttribute as CFString)
-            let sizeResult = setSize(frame.size, element: element, attribute: kAXSizeAttribute as CFString)
-            let finalPositionResult = setPoint(frame.origin, element: element, attribute: kAXPositionAttribute as CFString)
+            let positionResult = setPosition(frame.origin, for: element)
+            let sizeResult = setSize(frame.size, for: element)
+            let finalPositionResult = setPosition(frame.origin, for: element)
             return positionResult && sizeResult && finalPositionResult
         }
 
-        let sizeResult = setSize(frame.size, element: element, attribute: kAXSizeAttribute as CFString)
-        let positionResult = setPoint(frame.origin, element: element, attribute: kAXPositionAttribute as CFString)
+        let sizeResult = setSize(frame.size, for: element)
+        let positionResult = setPosition(frame.origin, for: element)
         return sizeResult && positionResult
+    }
+
+    @discardableResult
+    func setPosition(_ point: CGPoint, for element: AXUIElement) -> Bool {
+        let attribute = kAXPositionAttribute as CFString
+        guard isSettable(element, attribute) else {
+            return false
+        }
+        return setPoint(point, element: element, attribute: attribute)
+    }
+
+    @discardableResult
+    func setSize(_ size: CGSize, for element: AXUIElement) -> Bool {
+        let attribute = kAXSizeAttribute as CFString
+        guard isSettable(element, attribute) else {
+            return false
+        }
+        return setSizeValue(size, element: element, attribute: attribute)
+    }
+
+    @discardableResult
+    func refreshSizeConstraintByZooming(_ element: AXUIElement) -> Bool {
+        var rawButton: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(
+            element,
+            "AXZoomButton" as CFString,
+            &rawButton
+        ) == .success,
+        let rawButton,
+        CFGetTypeID(rawButton) == AXUIElementGetTypeID() else {
+            return false
+        }
+
+        let zoomButton = unsafeBitCast(rawButton, to: AXUIElement.self)
+        var rawActions: CFArray?
+        guard AXUIElementCopyActionNames(zoomButton, &rawActions) == .success,
+              let actions = rawActions as? [String],
+              actions.contains("AXZoomWindow") else {
+            return false
+        }
+
+        // Chromium currently performs this advertised action but may still report
+        // kAXErrorActionUnsupported, so availability is the reliable signal here.
+        let result = AXUIElementPerformAction(zoomButton, "AXZoomWindow" as CFString)
+        logger.debug("AXZoomWindow refresh result: \(result.rawValue)")
+        return true
     }
 
     private func makeLiveWindow(
@@ -234,9 +288,22 @@ final class AccessibilityClient {
         return AXUIElementSetAttributeValue(element, attribute, value) == .success
     }
 
-    private func setSize(_ size: CGSize, element: AXUIElement, attribute: CFString) -> Bool {
+    private func setSizeValue(_ size: CGSize, element: AXUIElement, attribute: CFString) -> Bool {
         var mutableSize = size
         guard let value = AXValueCreate(.cgSize, &mutableSize) else {
+            return false
+        }
+        return AXUIElementSetAttributeValue(element, attribute, value) == .success
+    }
+
+    private func setRectIfSupported(_ rect: CGRect, element: AXUIElement) -> Bool? {
+        let attribute = "AXFrame" as CFString
+        guard isSettable(element, attribute) else {
+            return nil
+        }
+
+        var mutableRect = rect
+        guard let value = AXValueCreate(.cgRect, &mutableRect) else {
             return false
         }
         return AXUIElementSetAttributeValue(element, attribute, value) == .success

@@ -32,6 +32,13 @@ struct RestoreReport: Equatable {
     var failedWindowCount: Int
 }
 
+enum FullHeightConstraintRefreshPolicy {
+    static func shouldRefresh(actual: CGRect, target: CGRect, displayFrame: CGRect) -> Bool {
+        target.height >= displayFrame.height - 32 &&
+            actual.height < target.height - 32
+    }
+}
+
 @MainActor
 final class RestoreEngine {
     private let accessibility: AccessibilityClient
@@ -122,6 +129,7 @@ final class RestoreEngine {
         struct PendingVerification {
             var element: AXUIElement
             var target: CGRect
+            var targetDisplayFrame: CGRect
             var bundleIdentifier: String
             var ordinal: Int
         }
@@ -150,6 +158,7 @@ final class RestoreEngine {
                     PendingVerification(
                         element: liveWindow.element,
                         target: targetFrame,
+                        targetDisplayFrame: targetDisplay.axVisibleFrame,
                         bundleIdentifier: savedWindow.matchKey.bundleIdentifier,
                         ordinal: savedWindow.matchKey.ordinal
                     )
@@ -171,9 +180,18 @@ final class RestoreEngine {
                 continue
             }
 
-            let retrySucceeded = accessibility.setFrame(item.target, for: item.element, alternateOrder: true)
+            // A size write made while WindowServer still associates the window with the
+            // previous display is capped to that display's visible height. Move first,
+            // wait for screen reassociation, then resize and pin the origin again.
+            let movedToTargetDisplay = accessibility.setPosition(item.target.origin, for: item.element)
+            if movedToTargetDisplay {
+                try? await Task.sleep(nanoseconds: 350_000_000)
+            }
+            let resizedOnTargetDisplay = accessibility.setSize(item.target.size, for: item.element)
+            let finalPositionSucceeded = accessibility.setPosition(item.target.origin, for: item.element)
+            let retrySucceeded = movedToTargetDisplay && resizedOnTargetDisplay && finalPositionSucceeded
             if retrySucceeded {
-                try? await Task.sleep(nanoseconds: 80_000_000)
+                try? await Task.sleep(nanoseconds: 180_000_000)
             }
 
             if retrySucceeded,
@@ -181,6 +199,32 @@ final class RestoreEngine {
                approximatelyEqual(actual, item.target, tolerance: 32) {
                 restored += 1
                 continue
+            }
+
+            if let actual = accessibility.frame(of: item.element),
+               FullHeightConstraintRefreshPolicy.shouldRefresh(
+                   actual: actual,
+                   target: item.target,
+                   displayFrame: item.targetDisplayFrame
+               ),
+               accessibility.refreshSizeConstraintByZooming(item.element) {
+                logger.notice(
+                    "Refreshing target-display size constraint for \(item.bundleIdentifier, privacy: .public) ordinal=\(item.ordinal)"
+                )
+                try? await Task.sleep(nanoseconds: 900_000_000)
+                let resizedAfterZoom = accessibility.setSize(item.target.size, for: item.element)
+                let positionedAfterZoom = accessibility.setPosition(item.target.origin, for: item.element)
+                if resizedAfterZoom, positionedAfterZoom {
+                    try? await Task.sleep(nanoseconds: 180_000_000)
+                }
+
+                if resizedAfterZoom,
+                   positionedAfterZoom,
+                   let refreshedFrame = accessibility.frame(of: item.element),
+                   approximatelyEqual(refreshedFrame, item.target, tolerance: 32) {
+                    restored += 1
+                    continue
+                }
             }
 
             let actualDescription = accessibility.frame(of: item.element)
@@ -205,4 +249,5 @@ final class RestoreEngine {
             abs(lhs.width - rhs.width) <= tolerance &&
             abs(lhs.height - rhs.height) <= tolerance
     }
+
 }

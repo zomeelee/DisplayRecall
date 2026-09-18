@@ -3,6 +3,12 @@ import Foundation
 import OSLog
 import ServiceManagement
 
+enum AutomaticRestoreRetryPolicy {
+    // Some applications do not expose their windows to Accessibility until well after
+    // macOS has finished publishing the replacement display topology.
+    static let delaysInSeconds: [UInt64] = [4, 8, 15, 25, 40, 60]
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     enum Phase: Equatable {
@@ -49,6 +55,7 @@ final class AppModel: ObservableObject {
     private let engine: RestoreEngine
     private let logger = Logger(subsystem: "com.zomeelee.DisplayRecall", category: "Restore")
     private var settleTask: Task<Void, Never>?
+    private var automaticRetryTask: Task<Void, Never>?
     private var permissionPollingTask: Task<Void, Never>?
     private var topologyWatchTask: Task<Void, Never>?
     private var wakeObserver: NSObjectProtocol?
@@ -89,6 +96,7 @@ final class AppModel: ObservableObject {
 
     deinit {
         settleTask?.cancel()
+        automaticRetryTask?.cancel()
         permissionPollingTask?.cancel()
         topologyWatchTask?.cancel()
         displayMonitor.stop()
@@ -143,7 +151,10 @@ final class AppModel: ObservableObject {
             guard let self, self.restoreOnLaunch, self.autoRestore, self.hasExternalDisplay else {
                 return
             }
-            await self.restoreNow(trigger: "启动时自动恢复")
+            let report = await self.restoreNow(trigger: "启动时自动恢复")
+            if report?.matchedWindowCount == 0 {
+                self.scheduleAutomaticRetry(reason: "启动时暂未发现可恢复窗口")
+            }
         }
     }
 
@@ -195,6 +206,8 @@ final class AppModel: ObservableObject {
     }
 
     func restoreManually() {
+        automaticRetryTask?.cancel()
+        automaticRetryTask = nil
         Task { [weak self] in
             await self?.restoreNow(trigger: "手动恢复")
         }
@@ -267,6 +280,9 @@ final class AppModel: ObservableObject {
             return
         }
 
+        automaticRetryTask?.cancel()
+        automaticRetryTask = nil
+
         // 进入 settling 后不允许保存，避免把显示器断开后挤回主屏的窗口覆盖到正确快照。
         phase = .settling
         statusMessage = "\(reason)，正在等待系统窗口坐标稳定"
@@ -296,7 +312,10 @@ final class AppModel: ObservableObject {
                     self.hasExternalDisplay = topology.hasExternalDisplay
                     if topology.hasExternalDisplay, self.autoRestore {
                         self.logger.notice("Stable external display detected; starting automatic restore")
-                        await self.restoreNow(trigger: "显示器接入后自动恢复")
+                        let report = await self.restoreNow(trigger: "显示器接入后自动恢复")
+                        if report?.matchedWindowCount == 0 {
+                            self.scheduleAutomaticRetry(reason: "显示器接入后暂未发现可恢复窗口")
+                        }
                     } else {
                         self.phase = .idle
                         self.statusMessage = topology.hasExternalDisplay
@@ -313,23 +332,71 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func restoreNow(trigger: String) async {
+    private func scheduleAutomaticRetry(reason: String) {
+        automaticRetryTask?.cancel()
+        statusMessage = "\(reason)，将在后台继续自动重试"
+        logger.notice("Automatic restore matched no windows; scheduling background retries")
+
+        automaticRetryTask = Task { [weak self] in
+            for (attempt, delay) in AutomaticRestoreRetryPolicy.delaysInSeconds.enumerated() {
+                do {
+                    try await Task.sleep(nanoseconds: delay * 1_000_000_000)
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled, let self, self.autoRestore else {
+                    return
+                }
+
+                let topology = self.refresh()
+                guard topology.hasExternalDisplay else {
+                    return
+                }
+
+                while self.phase != .idle {
+                    do {
+                        try await Task.sleep(nanoseconds: 1_000_000_000)
+                    } catch {
+                        return
+                    }
+                    guard !Task.isCancelled else { return }
+                }
+
+                self.logger.notice("Starting automatic restore background retry \(attempt + 1)")
+                let report = await self.restoreNow(trigger: "显示器接入后自动重试")
+                if let report, report.matchedWindowCount > 0 {
+                    self.logger.notice(
+                        "Automatic restore background retry matched \(report.matchedWindowCount) windows"
+                    )
+                    return
+                }
+            }
+
+            guard let self, !Task.isCancelled else { return }
+            self.statusMessage = "自动恢复暂未发现可访问窗口；切换到对应桌面后可点击手动恢复"
+            self.logger.notice("Automatic restore background retries exhausted without a window match")
+        }
+    }
+
+    @discardableResult
+    private func restoreNow(trigger: String) async -> RestoreReport? {
         guard phase != .restoring else {
-            return
+            return nil
         }
 
         refresh()
         guard permissionGranted else {
             statusMessage = DisplayRecallError.accessibilityPermissionRequired.localizedDescription
             phase = .idle
-            return
+            return nil
         }
         guard hasExternalDisplay else {
             statusMessage = DisplayRecallError.externalDisplayRequired.localizedDescription
             phase = .idle
-            return
+            return nil
         }
 
+        var completedReport: RestoreReport?
         do {
             guard let snapshot = try store.load() else {
                 throw DisplayRecallError.noSnapshot
@@ -376,6 +443,7 @@ final class AppModel: ObservableObject {
             guard let report = bestReport else {
                 throw DisplayRecallError.noWindows
             }
+            completedReport = report
             let prefix = usesReplacement ? "已跨显示器恢复" : "已恢复"
             statusMessage = "\(prefix) \(report.restoredWindowCount)/\(report.savedWindowCount) 个窗口，匹配到 \(report.matchedWindowCount) 个"
             if report.failedWindowCount > 0 {
@@ -390,5 +458,6 @@ final class AppModel: ObservableObject {
             phase = .idle
         }
         refresh()
+        return completedReport
     }
 }
