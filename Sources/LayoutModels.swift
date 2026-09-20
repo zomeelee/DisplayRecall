@@ -51,6 +51,8 @@ struct WindowMatchKey: Codable, Equatable, Sendable {
     var role: String
     var subrole: String?
     var ordinal: Int
+    var runtimeOwnerPID: Int32? = nil
+    var runtimeWindowID: UInt32? = nil
 }
 
 struct SavedWindow: Codable, Equatable, Identifiable, Sendable {

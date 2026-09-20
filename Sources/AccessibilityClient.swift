@@ -13,6 +13,11 @@ struct LiveWindow {
 }
 
 final class AccessibilityClient {
+    private struct RuntimeWindowIdentity {
+        var id: CGWindowID
+        var frame: CGRect
+    }
+
     private let logger = Logger(subsystem: "com.zomeelee.DisplayRecall", category: "Accessibility")
 
     var isTrusted: Bool {
@@ -33,6 +38,8 @@ final class AccessibilityClient {
         }
 
         var result: [LiveWindow] = []
+        let runtimeWindowsByPID = captureRuntimeWindowIdentities()
+        var claimedRuntimeWindowIDs = Set<CGWindowID>()
         let applications = NSWorkspace.shared.runningApplications
             .filter { !$0.isTerminated && !$0.isHidden && $0.activationPolicy == .regular }
             .sorted { ($0.localizedName ?? "") < ($1.localizedName ?? "") }
@@ -63,7 +70,7 @@ final class AccessibilityClient {
 
             var ordinal = 0
             for window in windows {
-                guard let liveWindow = makeLiveWindow(
+                guard var liveWindow = makeLiveWindow(
                     window,
                     application: application,
                     bundleIdentifier: bundleIdentifier,
@@ -71,12 +78,79 @@ final class AccessibilityClient {
                 ) else {
                     continue
                 }
+                if let identity = matchingRuntimeIdentity(
+                    for: liveWindow.frame,
+                    candidates: runtimeWindowsByPID[application.processIdentifier] ?? [],
+                    excluding: claimedRuntimeWindowIDs
+                ) {
+                    liveWindow.matchKey.runtimeOwnerPID = application.processIdentifier
+                    liveWindow.matchKey.runtimeWindowID = identity.id
+                    claimedRuntimeWindowIDs.insert(identity.id)
+                    logger.debug(
+                        "Mapped \(bundleIdentifier, privacy: .public) ordinal=\(ordinal) to CGWindowID=\(identity.id)"
+                    )
+                }
                 result.append(liveWindow)
                 ordinal += 1
             }
         }
         logger.debug("Window scan produced \(result.count) restorable windows")
         return result
+    }
+
+    private func captureRuntimeWindowIdentities() -> [pid_t: [RuntimeWindowIdentity]] {
+        let options: CGWindowListOption = [.optionAll, .excludeDesktopElements]
+        guard let rawWindows = CGWindowListCopyWindowInfo(options, kCGNullWindowID)
+            as? [[String: Any]] else {
+            return [:]
+        }
+
+        var result: [pid_t: [RuntimeWindowIdentity]] = [:]
+        for rawWindow in rawWindows {
+            guard let ownerPID = rawWindow[kCGWindowOwnerPID as String] as? Int,
+                  let windowNumber = rawWindow[kCGWindowNumber as String] as? Int,
+                  let layer = rawWindow[kCGWindowLayer as String] as? Int,
+                  layer == 0,
+                  let rawBounds = rawWindow[kCGWindowBounds as String],
+                  let bounds = CGRect(
+                      dictionaryRepresentation: rawBounds as! CFDictionary
+                  ),
+                  bounds.width >= 80,
+                  bounds.height >= 60 else {
+                continue
+            }
+
+            let pid = pid_t(ownerPID)
+            result[pid, default: []].append(
+                RuntimeWindowIdentity(id: CGWindowID(windowNumber), frame: bounds)
+            )
+        }
+        return result
+    }
+
+    private func matchingRuntimeIdentity(
+        for frame: CGRect,
+        candidates: [RuntimeWindowIdentity],
+        excluding claimedIDs: Set<CGWindowID>
+    ) -> RuntimeWindowIdentity? {
+        var bestIdentity: RuntimeWindowIdentity?
+        var bestDistance = CGFloat.greatestFiniteMagnitude
+
+        for identity in candidates where !claimedIDs.contains(identity.id) {
+            let xDistance = abs(identity.frame.minX - frame.minX)
+            let yDistance = abs(identity.frame.minY - frame.minY)
+            let widthDistance = abs(identity.frame.width - frame.width)
+            let heightDistance = abs(identity.frame.height - frame.height)
+            let distance = xDistance + yDistance + widthDistance + heightDistance
+            guard distance <= 8 else { continue }
+
+            if distance < bestDistance ||
+                (distance == bestDistance && identity.id < (bestIdentity?.id ?? .max)) {
+                bestIdentity = identity
+                bestDistance = distance
+            }
+        }
+        return bestIdentity
     }
 
     func frame(of element: AXUIElement) -> CGRect? {

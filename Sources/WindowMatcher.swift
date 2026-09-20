@@ -52,6 +52,16 @@ enum WindowMatcher {
         }
 
         var value = 10
+        if let savedOwnerPID = saved.runtimeOwnerPID,
+           let liveOwnerPID = live.runtimeOwnerPID,
+           savedOwnerPID == liveOwnerPID,
+           let savedWindowID = saved.runtimeWindowID,
+           let liveWindowID = live.runtimeWindowID {
+            guard savedWindowID == liveWindowID else {
+                return 0
+            }
+            value += 1_000
+        }
         if let identifier = saved.identifier,
            !identifier.isEmpty,
            identifier == live.identifier {
