@@ -39,6 +39,19 @@ enum FullHeightConstraintRefreshPolicy {
     }
 }
 
+enum PostZoomFrameRecoveryPolicy {
+    static let initialSettleNanoseconds: UInt64 = 900_000_000
+    static let deferredReapplyNanoseconds: UInt64 = 2_000_000_000
+    static let verificationNanoseconds: UInt64 = 250_000_000
+
+    static func needsDeferredReapply(actual: CGRect, target: CGRect) -> Bool {
+        abs(actual.minX - target.minX) > 32 ||
+            abs(actual.minY - target.minY) > 32 ||
+            abs(actual.width - target.width) > 32 ||
+            abs(actual.height - target.height) > 32
+    }
+}
+
 @MainActor
 final class RestoreEngine {
     private let accessibility: AccessibilityClient
@@ -211,7 +224,9 @@ final class RestoreEngine {
                 logger.notice(
                     "Refreshing target-display size constraint for \(item.bundleIdentifier, privacy: .public) ordinal=\(item.ordinal)"
                 )
-                try? await Task.sleep(nanoseconds: 900_000_000)
+                try? await Task.sleep(
+                    nanoseconds: PostZoomFrameRecoveryPolicy.initialSettleNanoseconds
+                )
                 let resizedAfterZoom = accessibility.setSize(item.target.size, for: item.element)
                 let positionedAfterZoom = accessibility.setPosition(item.target.origin, for: item.element)
                 if resizedAfterZoom, positionedAfterZoom {
@@ -224,6 +239,44 @@ final class RestoreEngine {
                    approximatelyEqual(refreshedFrame, item.target, tolerance: 32) {
                     restored += 1
                     continue
+                }
+
+                // Chromium can finish the native Zoom animation after accepting the
+                // first AXSize write, leaving a half-screen target at full display width.
+                // Once the animation is fully settled, a normal size/position write
+                // releases that state and also forces the renderer to reflow its content.
+                if let actualAfterZoom = accessibility.frame(of: item.element),
+                   PostZoomFrameRecoveryPolicy.needsDeferredReapply(
+                       actual: actualAfterZoom,
+                       target: item.target
+                   ) {
+                    logger.notice(
+                        "Zoom left a stale frame for \(item.bundleIdentifier, privacy: .public) ordinal=\(item.ordinal); scheduling deferred frame reapply"
+                    )
+                    try? await Task.sleep(
+                        nanoseconds: PostZoomFrameRecoveryPolicy.deferredReapplyNanoseconds
+                    )
+                    let resizedAfterSettle = accessibility.setSize(
+                        item.target.size,
+                        for: item.element
+                    )
+                    let positionedAfterSettle = accessibility.setPosition(
+                        item.target.origin,
+                        for: item.element
+                    )
+                    if resizedAfterSettle, positionedAfterSettle {
+                        try? await Task.sleep(
+                            nanoseconds: PostZoomFrameRecoveryPolicy.verificationNanoseconds
+                        )
+                    }
+
+                    if resizedAfterSettle,
+                       positionedAfterSettle,
+                       let settledFrame = accessibility.frame(of: item.element),
+                       approximatelyEqual(settledFrame, item.target, tolerance: 32) {
+                        restored += 1
+                        continue
+                    }
                 }
             }
 

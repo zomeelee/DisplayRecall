@@ -151,6 +151,24 @@ final class DisplayTopologyTests: XCTestCase {
         )
     }
 
+    func testDefersFrameReapplyWhenZoomLeavesHalfScreenWindowFullWidth() {
+        XCTAssertTrue(
+            PostZoomFrameRecoveryPolicy.needsDeferredReapply(
+                actual: CGRect(x: 2378, y: -97, width: 1876, height: 1050),
+                target: CGRect(x: 2378, y: -97, width: 938, height: 1050)
+            )
+        )
+    }
+
+    func testSkipsDeferredFrameReapplyWhenOnlyRoundingDiffers() {
+        XCTAssertFalse(
+            PostZoomFrameRecoveryPolicy.needsDeferredReapply(
+                actual: CGRect(x: 2377, y: -97, width: 939, height: 1050),
+                target: CGRect(x: 2378, y: -97, width: 938, height: 1050)
+            )
+        )
+    }
+
     private func makeDisplay(
         id: CGDirectDisplayID,
         uuid: String,
