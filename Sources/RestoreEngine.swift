@@ -30,6 +30,10 @@ struct RestoreReport: Equatable {
     var matchedWindowCount: Int
     var restoredWindowCount: Int
     var failedWindowCount: Int
+
+    var needsAutomaticRetry: Bool {
+        restoredWindowCount < savedWindowCount || failedWindowCount > 0
+    }
 }
 
 enum FullHeightConstraintRefreshPolicy {
@@ -138,6 +142,20 @@ final class RestoreEngine {
             saved: snapshot.windows,
             liveKeys: liveWindows.map(\.matchKey)
         )
+        let matchedSavedIndices = Set(pairs.map(\.savedIndex))
+        if matchedSavedIndices.count < snapshot.windows.count {
+            let unmatched = snapshot.windows.indices
+                .filter { !matchedSavedIndices.contains($0) }
+                .prefix(12)
+                .map {
+                    let key = snapshot.windows[$0].matchKey
+                    return "\(key.bundleIdentifier)#\(key.ordinal)"
+                }
+                .joined(separator: ", ")
+            logger.notice(
+                "Unmatched saved windows (\(snapshot.windows.count - matchedSavedIndices.count)): \(unmatched, privacy: .public)"
+            )
+        }
 
         struct PendingVerification {
             var element: AXUIElement

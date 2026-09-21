@@ -131,6 +131,52 @@ final class DisplayTopologyTests: XCTestCase {
         })
     }
 
+    func testAutomaticRestoreRetriesPartialResult() {
+        let report = RestoreReport(
+            savedWindowCount: 27,
+            matchedWindowCount: 19,
+            restoredWindowCount: 19,
+            failedWindowCount: 0
+        )
+
+        XCTAssertTrue(AutomaticRestoreRetryPolicy.shouldRetry(report))
+        XCTAssertFalse(
+            AutomaticRestoreRetryPolicy.shouldAcceptStablePartialResult(
+                report,
+                attemptCount: 1,
+                consecutiveAttemptsWithoutProgress: 1
+            )
+        )
+    }
+
+    func testAutomaticRestoreStopsAfterPartialResultStabilizes() {
+        let report = RestoreReport(
+            savedWindowCount: 27,
+            matchedWindowCount: 21,
+            restoredWindowCount: 21,
+            failedWindowCount: 0
+        )
+
+        XCTAssertTrue(
+            AutomaticRestoreRetryPolicy.shouldAcceptStablePartialResult(
+                report,
+                attemptCount: 3,
+                consecutiveAttemptsWithoutProgress: 2
+            )
+        )
+    }
+
+    func testAutomaticRestoreDoesNotRetryCompleteResult() {
+        let report = RestoreReport(
+            savedWindowCount: 22,
+            matchedWindowCount: 22,
+            restoredWindowCount: 22,
+            failedWindowCount: 0
+        )
+
+        XCTAssertFalse(AutomaticRestoreRetryPolicy.shouldRetry(report))
+    }
+
     func testRefreshesConstraintWhenFullHeightTargetRemainsTooShort() {
         XCTAssertTrue(
             FullHeightConstraintRefreshPolicy.shouldRefresh(

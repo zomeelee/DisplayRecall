@@ -7,6 +7,22 @@ enum AutomaticRestoreRetryPolicy {
     // Some applications do not expose their windows to Accessibility until well after
     // macOS has finished publishing the replacement display topology.
     static let delaysInSeconds: [UInt64] = [4, 8, 15, 25, 40, 60]
+    static let minimumAttemptsBeforeAcceptingStablePartialResult = 3
+
+    static func shouldRetry(_ report: RestoreReport) -> Bool {
+        report.needsAutomaticRetry
+    }
+
+    static func shouldAcceptStablePartialResult(
+        _ report: RestoreReport,
+        attemptCount: Int,
+        consecutiveAttemptsWithoutProgress: Int
+    ) -> Bool {
+        report.matchedWindowCount > 0 &&
+            report.failedWindowCount == 0 &&
+            attemptCount >= minimumAttemptsBeforeAcceptingStablePartialResult &&
+            consecutiveAttemptsWithoutProgress >= 2
+    }
 }
 
 @MainActor
@@ -152,8 +168,11 @@ final class AppModel: ObservableObject {
                 return
             }
             let report = await self.restoreNow(trigger: "启动时自动恢复")
-            if report?.matchedWindowCount == 0 {
-                self.scheduleAutomaticRetry(reason: "启动时暂未发现可恢复窗口")
+            if let report, AutomaticRestoreRetryPolicy.shouldRetry(report) {
+                self.scheduleAutomaticRetry(
+                    reason: "启动时仍有窗口尚未恢复",
+                    initialReport: report
+                )
             }
         }
     }
@@ -313,8 +332,11 @@ final class AppModel: ObservableObject {
                     if topology.hasExternalDisplay, self.autoRestore {
                         self.logger.notice("Stable external display detected; starting automatic restore")
                         let report = await self.restoreNow(trigger: "显示器接入后自动恢复")
-                        if report?.matchedWindowCount == 0 {
-                            self.scheduleAutomaticRetry(reason: "显示器接入后暂未发现可恢复窗口")
+                        if let report, AutomaticRestoreRetryPolicy.shouldRetry(report) {
+                            self.scheduleAutomaticRetry(
+                                reason: "显示器接入后仍有窗口尚未恢复",
+                                initialReport: report
+                            )
                         }
                     } else {
                         self.phase = .idle
@@ -332,12 +354,18 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func scheduleAutomaticRetry(reason: String) {
+    private func scheduleAutomaticRetry(reason: String, initialReport: RestoreReport) {
         automaticRetryTask?.cancel()
         statusMessage = "\(reason)，将在后台继续自动重试"
-        logger.notice("Automatic restore matched no windows; scheduling background retries")
+        logger.notice(
+            "Automatic restore incomplete (saved=\(initialReport.savedWindowCount), matched=\(initialReport.matchedWindowCount), restored=\(initialReport.restoredWindowCount), failed=\(initialReport.failedWindowCount)); scheduling background retries"
+        )
 
         automaticRetryTask = Task { [weak self] in
+            var bestMatchedCount = initialReport.matchedWindowCount
+            var bestRestoredCount = initialReport.restoredWindowCount
+            var consecutiveAttemptsWithoutProgress = 0
+
             for (attempt, delay) in AutomaticRestoreRetryPolicy.delaysInSeconds.enumerated() {
                 do {
                     try await Task.sleep(nanoseconds: delay * 1_000_000_000)
@@ -364,17 +392,50 @@ final class AppModel: ObservableObject {
 
                 self.logger.notice("Starting automatic restore background retry \(attempt + 1)")
                 let report = await self.restoreNow(trigger: "显示器接入后自动重试")
-                if let report, report.matchedWindowCount > 0 {
+                guard let report else {
+                    continue
+                }
+
+                let madeProgress = report.matchedWindowCount > bestMatchedCount ||
+                    report.restoredWindowCount > bestRestoredCount
+                if madeProgress {
+                    bestMatchedCount = max(bestMatchedCount, report.matchedWindowCount)
+                    bestRestoredCount = max(bestRestoredCount, report.restoredWindowCount)
+                    consecutiveAttemptsWithoutProgress = 0
+                } else {
+                    consecutiveAttemptsWithoutProgress += 1
+                }
+
+                if !AutomaticRestoreRetryPolicy.shouldRetry(report) {
                     self.logger.notice(
-                        "Automatic restore background retry matched \(report.matchedWindowCount) windows"
+                        "Automatic restore background retry completed all \(report.savedWindowCount) windows"
+                    )
+                    return
+                }
+
+                if AutomaticRestoreRetryPolicy.shouldAcceptStablePartialResult(
+                    report,
+                    attemptCount: attempt + 1,
+                    consecutiveAttemptsWithoutProgress: consecutiveAttemptsWithoutProgress
+                ) {
+                    self.statusMessage = "已恢复当前可访问的 \(bestRestoredCount) 个窗口；其余保存窗口当前未出现"
+                    self.logger.notice(
+                        "Automatic restore stabilized at matched=\(bestMatchedCount), restored=\(bestRestoredCount) after \(attempt + 1) retries"
                     )
                     return
                 }
             }
 
             guard let self, !Task.isCancelled else { return }
-            self.statusMessage = "自动恢复暂未发现可访问窗口；切换到对应桌面后可点击手动恢复"
-            self.logger.notice("Automatic restore background retries exhausted without a window match")
+            if bestMatchedCount > 0 {
+                self.statusMessage = "已恢复当前可访问的 \(bestRestoredCount) 个窗口；仍有保存窗口未出现或受应用限制"
+                self.logger.notice(
+                    "Automatic restore retries exhausted at matched=\(bestMatchedCount), restored=\(bestRestoredCount)"
+                )
+            } else {
+                self.statusMessage = "自动恢复暂未发现可访问窗口；切换到对应桌面后可点击手动恢复"
+                self.logger.notice("Automatic restore background retries exhausted without a window match")
+            }
         }
     }
 
