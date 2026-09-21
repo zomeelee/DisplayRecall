@@ -44,7 +44,7 @@ final class AccessibilityClient {
             .filter { !$0.isTerminated && !$0.isHidden && $0.activationPolicy == .regular }
             .sorted { ($0.localizedName ?? "") < ($1.localizedName ?? "") }
 
-        logger.debug("Scanning \(applications.count) visible regular applications")
+        logger.notice("Scanning \(applications.count) visible regular applications")
 
         for application in applications {
             guard let bundleIdentifier = application.bundleIdentifier,
@@ -62,7 +62,7 @@ final class AccessibilityClient {
             )
             guard windowsResult == .success,
                   let windows = rawWindows as? [AXUIElement] else {
-                logger.debug(
+                logger.notice(
                     "Window query failed for \(bundleIdentifier, privacy: .public), error=\(windowsResult.rawValue)"
                 )
                 continue
@@ -94,7 +94,7 @@ final class AccessibilityClient {
                 ordinal += 1
             }
         }
-        logger.debug("Window scan produced \(result.count) restorable windows")
+        logger.notice("Window scan produced \(result.count) restorable windows")
         return result
     }
 
