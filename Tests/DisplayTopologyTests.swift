@@ -215,6 +215,60 @@ final class DisplayTopologyTests: XCTestCase {
         )
     }
 
+    func testMovesExpandedRightAnchoredWindowAwayFromRightDock() {
+        let displayFrame = CGRect(x: 1440, y: -97, width: 1876, height: 1050)
+        let target = CGRect(x: 2378, y: -97, width: 938, height: 1050)
+        let actual = CGRect(x: 2378, y: -97, width: 982, height: 1050)
+
+        let result = AppConstrainedFramePolicy.accommodatedFrame(
+            actual: actual,
+            requested: target,
+            displayFrame: displayFrame
+        )
+
+        XCTAssertEqual(result, CGRect(x: 2334, y: -97, width: 982, height: 1050))
+        XCTAssertEqual(result?.maxX, displayFrame.maxX)
+    }
+
+    func testKeepsExpandedLeftAnchoredWindowAwayFromLeftDock() {
+        let displayFrame = CGRect(x: 1484, y: -97, width: 1876, height: 1050)
+        let target = CGRect(x: 1484, y: -97, width: 938, height: 1050)
+        let actual = CGRect(x: 1484, y: -97, width: 982, height: 1050)
+
+        let result = AppConstrainedFramePolicy.accommodatedFrame(
+            actual: actual,
+            requested: target,
+            displayFrame: displayFrame
+        )
+
+        XCTAssertEqual(result?.minX, displayFrame.minX)
+        XCTAssertTrue(
+            result.map { AppConstrainedFramePolicy.isContained($0, in: displayFrame) } ?? false
+        )
+    }
+
+    func testMovesExpandedBottomAnchoredWindowAboveBottomDock() {
+        let displayFrame = CGRect(x: 1440, y: -97, width: 1920, height: 976)
+        let target = CGRect(x: 2400, y: 391, width: 960, height: 488)
+        let actual = CGRect(x: 2400, y: 391, width: 960, height: 520)
+
+        let result = AppConstrainedFramePolicy.accommodatedFrame(
+            actual: actual,
+            requested: target,
+            displayFrame: displayFrame
+        )
+
+        XCTAssertEqual(result, CGRect(x: 2400, y: 359, width: 960, height: 520))
+        XCTAssertEqual(result?.maxY, displayFrame.maxY)
+    }
+
+    func testRejectsFrameThatStillExtendsBehindDock() {
+        let displayFrame = CGRect(x: 1440, y: -97, width: 1876, height: 1050)
+        let obscured = CGRect(x: 2378, y: -97, width: 982, height: 1050)
+
+        XCTAssertFalse(AppConstrainedFramePolicy.isContained(obscured, in: displayFrame))
+    }
+
     private func makeDisplay(
         id: CGDirectDisplayID,
         uuid: String,

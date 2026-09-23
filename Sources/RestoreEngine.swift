@@ -56,8 +56,86 @@ enum PostZoomFrameRecoveryPolicy {
     }
 }
 
+enum AppConstrainedFramePolicy {
+    private static let sizeTolerance: CGFloat = 5
+    private static let edgeTolerance: CGFloat = 32
+
+    static func accommodatedFrame(
+        actual: CGRect,
+        requested: CGRect,
+        displayFrame: CGRect
+    ) -> CGRect? {
+        let appExpandedWidth = actual.width > requested.width + sizeTolerance
+        let appExpandedHeight = actual.height > requested.height + sizeTolerance
+        guard appExpandedWidth || appExpandedHeight,
+              actual.width <= displayFrame.width + sizeTolerance,
+              actual.height <= displayFrame.height + sizeTolerance else {
+            return nil
+        }
+
+        let origin = CGPoint(
+            x: accommodatedOrigin(
+                requestedMin: requested.minX,
+                requestedMax: requested.maxX,
+                requestedMid: requested.midX,
+                actualLength: actual.width,
+                displayMin: displayFrame.minX,
+                displayMax: displayFrame.maxX
+            ),
+            y: accommodatedOrigin(
+                requestedMin: requested.minY,
+                requestedMax: requested.maxY,
+                requestedMid: requested.midY,
+                actualLength: actual.height,
+                displayMin: displayFrame.minY,
+                displayMax: displayFrame.maxY
+            )
+        )
+        let accommodated = CGRect(origin: origin, size: actual.size)
+        return isContained(accommodated, in: displayFrame) ? accommodated : nil
+    }
+
+    static func isContained(
+        _ frame: CGRect,
+        in displayFrame: CGRect,
+        tolerance: CGFloat = 5
+    ) -> Bool {
+        frame.minX >= displayFrame.minX - tolerance &&
+            frame.minY >= displayFrame.minY - tolerance &&
+            frame.maxX <= displayFrame.maxX + tolerance &&
+            frame.maxY <= displayFrame.maxY + tolerance
+    }
+
+    private static func accommodatedOrigin(
+        requestedMin: CGFloat,
+        requestedMax: CGFloat,
+        requestedMid: CGFloat,
+        actualLength: CGFloat,
+        displayMin: CGFloat,
+        displayMax: CGFloat
+    ) -> CGFloat {
+        if abs(requestedMax - displayMax) <= edgeTolerance {
+            return displayMax - actualLength
+        }
+        if abs(requestedMin - displayMin) <= edgeTolerance {
+            return displayMin
+        }
+
+        let centered = requestedMid - actualLength / 2
+        return min(max(centered, displayMin), displayMax - actualLength)
+    }
+}
+
 @MainActor
 final class RestoreEngine {
+    private struct PendingVerification {
+        var element: AXUIElement
+        var target: CGRect
+        var targetDisplayFrame: CGRect
+        var bundleIdentifier: String
+        var ordinal: Int
+    }
+
     private let accessibility: AccessibilityClient
     private let displays: DisplayInventory
     private let bundleIdentifier: String
@@ -157,13 +235,6 @@ final class RestoreEngine {
             )
         }
 
-        struct PendingVerification {
-            var element: AXUIElement
-            var target: CGRect
-            var targetDisplayFrame: CGRect
-            var bundleIdentifier: String
-            var ordinal: Int
-        }
         var pending: [PendingVerification] = []
         var failed = 0
 
@@ -206,7 +277,8 @@ final class RestoreEngine {
 
         var restored = 0
         for item in pending {
-            if let actual = accessibility.frame(of: item.element), approximatelyEqual(actual, item.target) {
+            if let actual = accessibility.frame(of: item.element),
+               isAcceptableRestoredFrame(actual, item: item) {
                 restored += 1
                 continue
             }
@@ -227,7 +299,7 @@ final class RestoreEngine {
 
             if retrySucceeded,
                let actual = accessibility.frame(of: item.element),
-               approximatelyEqual(actual, item.target, tolerance: 32) {
+               isAcceptableRestoredFrame(actual, item: item, tolerance: 32) {
                 restored += 1
                 continue
             }
@@ -254,7 +326,7 @@ final class RestoreEngine {
                 if resizedAfterZoom,
                    positionedAfterZoom,
                    let refreshedFrame = accessibility.frame(of: item.element),
-                   approximatelyEqual(refreshedFrame, item.target, tolerance: 32) {
+                   isAcceptableRestoredFrame(refreshedFrame, item: item, tolerance: 32) {
                     restored += 1
                     continue
                 }
@@ -291,10 +363,32 @@ final class RestoreEngine {
                     if resizedAfterSettle,
                        positionedAfterSettle,
                        let settledFrame = accessibility.frame(of: item.element),
-                       approximatelyEqual(settledFrame, item.target, tolerance: 32) {
+                       isAcceptableRestoredFrame(settledFrame, item: item, tolerance: 32) {
                         restored += 1
                         continue
                     }
+                }
+            }
+
+            if let actual = accessibility.frame(of: item.element),
+               let accommodated = AppConstrainedFramePolicy.accommodatedFrame(
+                   actual: actual,
+                   requested: item.target,
+                   displayFrame: item.targetDisplayFrame
+               ),
+               accessibility.setPosition(accommodated.origin, for: item.element) {
+                try? await Task.sleep(nanoseconds: 180_000_000)
+                if let finalFrame = accessibility.frame(of: item.element),
+                   approximatelyEqual(finalFrame, accommodated, tolerance: 8),
+                   AppConstrainedFramePolicy.isContained(
+                       finalFrame,
+                       in: item.targetDisplayFrame
+                   ) {
+                    logger.notice(
+                        "Accommodated app-constrained frame for \(item.bundleIdentifier, privacy: .public) ordinal=\(item.ordinal); requested=\(String(describing: item.target), privacy: .public); final=\(String(describing: finalFrame), privacy: .public)"
+                    )
+                    restored += 1
+                    continue
                 }
             }
 
@@ -312,6 +406,18 @@ final class RestoreEngine {
             restoredWindowCount: restored,
             failedWindowCount: failed
         )
+    }
+
+    private func isAcceptableRestoredFrame(
+        _ actual: CGRect,
+        item: PendingVerification,
+        tolerance: CGFloat = 5
+    ) -> Bool {
+        approximatelyEqual(actual, item.target, tolerance: tolerance) &&
+            AppConstrainedFramePolicy.isContained(
+                actual,
+                in: item.targetDisplayFrame
+            )
     }
 
     private func approximatelyEqual(_ lhs: CGRect, _ rhs: CGRect, tolerance: CGFloat = 5) -> Bool {
