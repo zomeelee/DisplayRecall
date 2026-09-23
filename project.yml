@@ -9,7 +9,6 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     SWIFT_VERSION: "5.0"
     ENABLE_HARDENED_RUNTIME: YES
-    DEVELOPMENT_TEAM: 793P3T7B34
     CURRENT_PROJECT_VERSION: 8
     MARKETING_VERSION: 0.1.7
 targets:
@@ -26,7 +25,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: DisplayRecall
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         INFOPLIST_KEY_LSUIElement: YES
-        INFOPLIST_KEY_NSHumanReadableCopyright: Copyright © 2026 zomeelee.
+        INFOPLIST_KEY_NSHumanReadableCopyright: Copyright © 2026 Zomee Lee.
         CODE_SIGN_STYLE: Automatic
     scheme:
       testTargets:

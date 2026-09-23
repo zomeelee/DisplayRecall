@@ -6,10 +6,13 @@ final class LayoutStore {
     let fileURL: URL
     private let backupURL: URL
 
-    init(fileManager: FileManager = .default) {
+    init(
+        fileManager: FileManager = .default,
+        bundleIdentifier: String = Bundle.main.bundleIdentifier ?? "com.zomeelee.DisplayRecall"
+    ) {
         self.fileManager = fileManager
         let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        directoryURL = applicationSupport.appendingPathComponent("com.zomeelee.DisplayRecall", isDirectory: true)
+        directoryURL = applicationSupport.appendingPathComponent(bundleIdentifier, isDirectory: true)
         fileURL = directoryURL.appendingPathComponent("layout-v1.json")
         backupURL = directoryURL.appendingPathComponent("layout-v1.backup.json")
     }

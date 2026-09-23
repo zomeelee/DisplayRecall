@@ -21,6 +21,7 @@
 		D302818E79854A9415931EF0 /* RestoreEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1DC0CD413E187AE7CF8E540 /* RestoreEngine.swift */; };
 		EDD85D016868B66D050C3C90 /* LayoutModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E0DAA146069966823CA901C /* LayoutModels.swift */; };
 		EEF712B0259AC05191CDA019 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0E45C196739DB1F1184EB50 /* AppModel.swift */; };
+		FA42652C336E3BA51DF142F7 /* LayoutStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDE99C89DF03E5FDC707A3E0 /* LayoutStoreTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,6 +51,7 @@
 		D35107E7EFEB6BDE9131A682 /* DisplayRecall.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DisplayRecall.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E1DC0CD413E187AE7CF8E540 /* RestoreEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestoreEngine.swift; sourceTree = "<group>"; };
 		F0E45C196739DB1F1184EB50 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		FDE99C89DF03E5FDC707A3E0 /* LayoutStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutStoreTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -58,6 +60,7 @@
 			children = (
 				C3F87AD941BA058ED259A9E3 /* DisplayTopologyTests.swift */,
 				75D8FBB8EADCC6211BD4A9C1 /* LayoutMapperTests.swift */,
+				FDE99C89DF03E5FDC707A3E0 /* LayoutStoreTests.swift */,
 				477E8ACB257FD826A8E33D62 /* WindowMatcherTests.swift */,
 			);
 			path = Tests;
@@ -146,11 +149,7 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
-					3D0FC87610F8595F8B6D0F63 = {
-						DevelopmentTeam = 793P3T7B34;
-					};
 					B58D072B2029FAB11E867A08 = {
-						DevelopmentTeam = 793P3T7B34;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -200,6 +199,7 @@
 			files = (
 				0B6753DF86D4A05D00202FCA /* DisplayTopologyTests.swift in Sources */,
 				B040BD8AD2C7985B71012D1A /* LayoutMapperTests.swift in Sources */,
+				FA42652C336E3BA51DF142F7 /* LayoutStoreTests.swift in Sources */,
 				4570E3C516E8F1D1C13F4AD7 /* WindowMatcherTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -251,7 +251,6 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = 793P3T7B34;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -318,7 +317,6 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = 793P3T7B34;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -352,7 +350,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = DisplayRecall;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 zomeelee.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Zomee Lee.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -407,7 +405,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = DisplayRecall;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 zomeelee.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Zomee Lee.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

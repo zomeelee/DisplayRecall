@@ -1,58 +1,81 @@
 # DisplayRecall
 
-DisplayRecall 是一个本地运行的 macOS 菜单栏工具。它保存 Mac 内置屏与外接显示器上的普通窗口布局，并在另一台外接显示器接入后，按屏幕可用区域的比例自动恢复窗口。
+[简体中文](README.zh-CN.md)
 
-## 第一版范围
+DisplayRecall is a local-first macOS menu bar utility that remembers ordinary window layouts across the built-in display and one external display. When a different external display is connected, it restores windows proportionally within that display's usable area.
 
-- 支持 Mac 内置屏加一台外接屏。
-- 支持当前桌面中的普通、非最小化、非全屏窗口。
-- 手动保存布局，之后在显示器接入、分辨率变化或睡眠唤醒后自动恢复。
-- 系统显示器回调之外，每 1.5 秒检查一次拓扑；更换不同显示器时采用延迟多次校正。自动恢复不会在首批窗口成功后立即停止，而会继续等待稍后才向辅助功能接口出现的窗口；连续多次没有新增匹配后才结束，避免因已关闭 App 留在快照中而反复重排。
-- 对外接屏应用菜单栏安全区修正；仅在系统明确报告窗口已 Zoom 时取消 Zoom，不会盲目切换窗口状态或退出全屏。
-- 跨屏恢复先移动窗口，等待 WindowServer 识别目标屏幕后再调整尺寸；若 Chromium 类应用仍沿用原屏高度上限，只对需要全高恢复的窗口执行一次标准 Zoom 刷新，并在 Zoom 动画完全结束后再次写回保存的宽度和位置，避免窗口停留在全宽状态而产生大块空白。
-- 当 App 强制采用比目标更大的最小宽高时，会按窗口原有的左、右、上、下贴边关系向可用区域内侧补偿，避免内容落到左侧、右侧或底部 Dock 下方。
-- 保存窗口时同时记录公开的 CoreGraphics 运行时窗口 ID；同一 App 的多个同名窗口在换屏后即使枚举顺序改变，也会恢复到各自原来的位置。App 进程重启导致 ID 失效时，会自动降级到标题、文档和序号匹配。
-- 窗口标题和文档地址只保存 SHA-256 摘要，不保存明文。
-- 所有数据保存在本机，不需要网络和屏幕录制权限。
-- 不使用私有 Spaces API。
+## Highlights
 
-## 构建
+- Restores the current desktop's ordinary, non-minimized, non-full-screen windows.
+- Reacts to display connection, resolution, and wake changes, with delayed retries for apps that expose their windows late.
+- Preserves the order of multiple similar windows when public Core Graphics window IDs remain available.
+- Compensates for menu bars, left/right/bottom Docks, and application-enforced minimum window sizes.
+- Stores window titles and document URLs only as SHA-256 digests, never as plaintext.
+- Runs locally with no network or screen-recording permission.
+- Uses public macOS APIs and does not use private Spaces APIs.
 
-要求：Xcode 26 或兼容版本、XcodeGen。
+See [Privacy](PRIVACY.md) for the exact data fields stored on disk.
+
+## Requirements
+
+- macOS 14 or later
+- Xcode 26 or a compatible version
+- Accessibility permission when running the app
+- XcodeGen 2.45 or later only when regenerating the Xcode project
+
+The generated `DisplayRecall.xcodeproj` is committed, so XcodeGen is not required just to build or test the checked-in project.
+
+## Build and test
+
+Clone the repository, open `DisplayRecall.xcodeproj`, select your own development team, and run the `DisplayRecall` scheme.
+
+For an unsigned CI-style test:
 
 ```sh
-xcodegen generate
 xcodebuild \
   -project DisplayRecall.xcodeproj \
   -scheme DisplayRecall \
   -configuration Debug \
   -derivedDataPath DerivedData \
-  build
+  CODE_SIGNING_ALLOWED=NO \
+  test
 ```
 
-构建后的 App 位于：
+When changing `project.yml`, regenerate and commit the Xcode project:
 
-```text
-DerivedData/Build/Products/Debug/DisplayRecall.app
+```sh
+xcodegen generate
 ```
 
-首次启动后，需要在“系统设置 → 隐私与安全性 → 辅助功能”中允许 DisplayRecall 控制窗口。
+macOS associates Accessibility authorization with the app's signing identity. A self-built copy may need permission again after its signing identity changes. Official binary releases will use a stable Developer ID identity.
 
-工程使用本机 Apple Development 证书进行稳定签名。不要增加
-`CODE_SIGNING_ALLOWED=NO` 或改为 ad-hoc 签名；macOS 会把辅助功能权限绑定到代码签名，临时签名在重新构建后会变成另一个权限身份。
+## Use
 
-从旧的临时签名版本升级时，需要在辅助功能设置中删除旧的 DisplayRecall 项，启动新版本后重新添加并开启一次。之后使用同一开发证书重新构建，不需要重复授权。
+1. Connect an external display and arrange the windows.
+2. Open the DisplayRecall menu bar item.
+3. Choose **Save Current Dual-Display Layout**.
+4. Connect another external display. DisplayRecall restores the saved layout proportionally.
 
-## 使用
+## Known limitations
 
-1. 连接外接显示器并排好窗口。
-2. 点击菜单栏中的 DisplayRecall 图标。
-3. 点击“保存当前双屏布局”。
-4. 以后接入任意一台外接显示器时，DisplayRecall 会把窗口按相对位置恢复。
+- Only the built-in display plus one external display is supported in the first release.
+- macOS does not provide a public API for reliably moving another app's window to a specific Space, so only the currently accessible desktop is covered.
+- Full-screen, minimized, modal, and very small utility windows are ignored.
+- Some apps may reject requested frames or enforce a minimum size.
+- Closed apps are not launched, and window stacking order is not restored.
 
-## 已知限制
+## Project policy
 
-- macOS 没有公开接口让第三方可靠地把其他 App 的窗口移动到指定 Space，因此只保证当前可访问桌面。
-- 系统全屏窗口、最小化窗口、弹窗与模态面板会被忽略。
-- 不同 App 对辅助功能接口的支持不一致，少数窗口可能拒绝移动或强制最小尺寸。
-- 第一版不会自动启动已经关闭的 App，也不会恢复窗口前后层级。
+- No telemetry or network access without prior public design discussion.
+- No private macOS APIs.
+- Privacy-sensitive changes require tests and documentation updates.
+
+See [Contributing](CONTRIBUTING.md), [Security](SECURITY.md), and [Architecture](docs/ARCHITECTURE.md).
+
+## Releases
+
+Source builds are available from the repository. A notarized official binary will be published only after it is signed with the project's Developer ID certificate. Do not treat unsigned third-party builds as official releases.
+
+## License
+
+DisplayRecall is available under the [MIT License](LICENSE).
