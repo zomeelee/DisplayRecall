@@ -1,0 +1,4 @@
+interface:
+  display_name: "DisplayRecall 窗口布局"
+  short_description: "调用本机 DisplayRecall 保存、恢复并检查窗口布局"
+  default_prompt: "Use $displayrecall-window-layout to check DisplayRecall and restore my saved external-display window layout."

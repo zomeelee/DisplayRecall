@@ -4,11 +4,13 @@ All notable changes to DisplayRecall are documented here.
 
 ## [Unreleased]
 
-- Prepared the project for public development and unsigned continuous integration.
-- Made the layout data directory follow the app's bundle identifier.
+- Added local command URLs for save, restore, and status operations.
+- Added machine-readable command results for Codex Skill integration.
 
 ## [0.1.7] - 2026-09-23
 
+- Prepared the project for public development and unsigned continuous integration.
+- Made the layout data directory follow the app's bundle identifier.
 - Kept application-constrained windows clear of left, right, and bottom Docks.
 - Added containment verification for restored window frames.
 

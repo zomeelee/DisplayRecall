@@ -13,6 +13,7 @@ The current layout and one backup are stored under:
 ```text
 ~/Library/Application Support/<bundle-identifier>/layout-v1.json
 ~/Library/Application Support/<bundle-identifier>/layout-v1.backup.json
+~/Library/Application Support/<bundle-identifier>/command-status-v1.json
 ```
 
 The official build uses `com.zomeelee.DisplayRecall` as its bundle identifier.
@@ -28,6 +29,8 @@ The files can contain:
 - SHA-256 digests of window titles and document URLs.
 
 Window titles and document URLs are not stored as plaintext. A digest still allows equality comparisons and may be guessable when the original value comes from a small, predictable set, so layout files should still be treated as private metadata.
+
+`command-status-v1.json` is overwritten for each local command. It can contain a request UUID, command name, state, timestamps, permission and display readiness, saved external-display name, and aggregate save or restore counts. It does not contain window titles, document URLs, or window geometry.
 
 ## Data not collected
 

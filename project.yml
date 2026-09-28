@@ -9,23 +9,32 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     SWIFT_VERSION: "5.0"
     ENABLE_HARDENED_RUNTIME: YES
-    CURRENT_PROJECT_VERSION: 8
-    MARKETING_VERSION: 0.1.7
+    CURRENT_PROJECT_VERSION: 9
+    MARKETING_VERSION: 0.1.8
 targets:
   DisplayRecall:
     type: application
     platform: macOS
     sources:
       - path: Sources
+    info:
+      path: Sources/Info.plist
+      properties:
+        CFBundleDisplayName: DisplayRecall
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Viewer
+            CFBundleURLName: com.zomeelee.DisplayRecall.command
+            CFBundleURLSchemes:
+              - displayrecall
+        LSApplicationCategoryType: public.app-category.utilities
+        LSUIElement: true
+        NSHumanReadableCopyright: Copyright © 2026 Zomee Lee.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.zomeelee.DisplayRecall
         PRODUCT_NAME: DisplayRecall
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: DisplayRecall
-        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
-        INFOPLIST_KEY_LSUIElement: YES
-        INFOPLIST_KEY_NSHumanReadableCopyright: Copyright © 2026 Zomee Lee.
         CODE_SIGN_STYLE: Automatic
     scheme:
       testTargets:

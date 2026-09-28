@@ -8,20 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		013B8441CDB60D1455F342E9 /* DisplayInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FEF71044C1E830045DC1FD /* DisplayInventory.swift */; };
+		0A9986BA1886B29A5E38CB73 /* DisplayRecallCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002AC6ADE7E20E7DA4DF7559 /* DisplayRecallCommandTests.swift */; };
 		0B6753DF86D4A05D00202FCA /* DisplayTopologyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3F87AD941BA058ED259A9E3 /* DisplayTopologyTests.swift */; };
+		0FE9F959A5D77590754B51A3 /* CommandStatusStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25A1407249E65B3075F6A457 /* CommandStatusStoreTests.swift */; };
 		1A7599F4368973496ED6D7A9 /* DisplayMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E1318BB50653154576F1C25 /* DisplayMonitor.swift */; };
 		4570E3C516E8F1D1C13F4AD7 /* WindowMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 477E8ACB257FD826A8E33D62 /* WindowMatcherTests.swift */; };
 		60E28F807B38171B8B114523 /* AccessibilityClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 072174E631140CA55C9DBD6C /* AccessibilityClient.swift */; };
 		632AE617BE4915212F8FBBD9 /* WindowMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9277BA8EAD3592F1DF7464A4 /* WindowMatcher.swift */; };
+		7F091681C48ED60A9A127FDC /* DisplayRecallAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD2F21758B14D97D841FBD95 /* DisplayRecallAppDelegate.swift */; };
 		8D7E8B4383E3212219FF78E4 /* LayoutMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A3BC76FBF37D245A7F07967 /* LayoutMapper.swift */; };
 		AE2953163C14D7A35F010278 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01132D7F96C053239749A187 /* Views.swift */; };
 		B040BD8AD2C7985B71012D1A /* LayoutMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D8FBB8EADCC6211BD4A9C1 /* LayoutMapperTests.swift */; };
 		BAA2F5AEA58C405E986532FF /* DisplayRecallApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DA8AC746982B6D5C587CF5B /* DisplayRecallApp.swift */; };
 		BBBBD9A798937CD5E087046E /* LayoutStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15D64F30CFA7A9C29E458FE4 /* LayoutStore.swift */; };
+		CBD1E652E5CA80DE78F38D37 /* DisplayRecallCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA2DE453D760962A70CE5A8 /* DisplayRecallCommand.swift */; };
 		D302818E79854A9415931EF0 /* RestoreEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1DC0CD413E187AE7CF8E540 /* RestoreEngine.swift */; };
 		EDD85D016868B66D050C3C90 /* LayoutModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E0DAA146069966823CA901C /* LayoutModels.swift */; };
 		EEF712B0259AC05191CDA019 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0E45C196739DB1F1184EB50 /* AppModel.swift */; };
 		FA42652C336E3BA51DF142F7 /* LayoutStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDE99C89DF03E5FDC707A3E0 /* LayoutStoreTests.swift */; };
+		FE1A71B0FC2C9E1096203FE4 /* CommandStatusStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AEB3095DC1ACECA90E898C5 /* CommandStatusStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,11 +40,14 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		002AC6ADE7E20E7DA4DF7559 /* DisplayRecallCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRecallCommandTests.swift; sourceTree = "<group>"; };
 		01132D7F96C053239749A187 /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
 		072174E631140CA55C9DBD6C /* AccessibilityClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityClient.swift; sourceTree = "<group>"; };
 		08FEF71044C1E830045DC1FD /* DisplayInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayInventory.swift; sourceTree = "<group>"; };
 		15D64F30CFA7A9C29E458FE4 /* LayoutStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutStore.swift; sourceTree = "<group>"; };
+		25A1407249E65B3075F6A457 /* CommandStatusStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandStatusStoreTests.swift; sourceTree = "<group>"; };
 		2A3BC76FBF37D245A7F07967 /* LayoutMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutMapper.swift; sourceTree = "<group>"; };
+		2AEB3095DC1ACECA90E898C5 /* CommandStatusStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandStatusStore.swift; sourceTree = "<group>"; };
 		44C6C343C04D8847F06B540E /* DisplayRecallTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DisplayRecallTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		477E8ACB257FD826A8E33D62 /* WindowMatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMatcherTests.swift; sourceTree = "<group>"; };
 		4DA8AC746982B6D5C587CF5B /* DisplayRecallApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRecallApp.swift; sourceTree = "<group>"; };
@@ -47,9 +55,12 @@
 		75D8FBB8EADCC6211BD4A9C1 /* LayoutMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutMapperTests.swift; sourceTree = "<group>"; };
 		9277BA8EAD3592F1DF7464A4 /* WindowMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMatcher.swift; sourceTree = "<group>"; };
 		9E0DAA146069966823CA901C /* LayoutModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutModels.swift; sourceTree = "<group>"; };
+		BFA2DE453D760962A70CE5A8 /* DisplayRecallCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRecallCommand.swift; sourceTree = "<group>"; };
 		C3F87AD941BA058ED259A9E3 /* DisplayTopologyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayTopologyTests.swift; sourceTree = "<group>"; };
+		CD2F21758B14D97D841FBD95 /* DisplayRecallAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRecallAppDelegate.swift; sourceTree = "<group>"; };
 		D35107E7EFEB6BDE9131A682 /* DisplayRecall.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DisplayRecall.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E1DC0CD413E187AE7CF8E540 /* RestoreEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestoreEngine.swift; sourceTree = "<group>"; };
+		EB1F68ACFB0AAF10BD021982 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F0E45C196739DB1F1184EB50 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		FDE99C89DF03E5FDC707A3E0 /* LayoutStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutStoreTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -58,6 +69,8 @@
 		11E4F5D73B7B7659061E4C28 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				25A1407249E65B3075F6A457 /* CommandStatusStoreTests.swift */,
+				002AC6ADE7E20E7DA4DF7559 /* DisplayRecallCommandTests.swift */,
 				C3F87AD941BA058ED259A9E3 /* DisplayTopologyTests.swift */,
 				75D8FBB8EADCC6211BD4A9C1 /* LayoutMapperTests.swift */,
 				FDE99C89DF03E5FDC707A3E0 /* LayoutStoreTests.swift */,
@@ -89,9 +102,13 @@
 			children = (
 				072174E631140CA55C9DBD6C /* AccessibilityClient.swift */,
 				F0E45C196739DB1F1184EB50 /* AppModel.swift */,
+				2AEB3095DC1ACECA90E898C5 /* CommandStatusStore.swift */,
 				08FEF71044C1E830045DC1FD /* DisplayInventory.swift */,
 				4E1318BB50653154576F1C25 /* DisplayMonitor.swift */,
 				4DA8AC746982B6D5C587CF5B /* DisplayRecallApp.swift */,
+				CD2F21758B14D97D841FBD95 /* DisplayRecallAppDelegate.swift */,
+				BFA2DE453D760962A70CE5A8 /* DisplayRecallCommand.swift */,
+				EB1F68ACFB0AAF10BD021982 /* Info.plist */,
 				2A3BC76FBF37D245A7F07967 /* LayoutMapper.swift */,
 				9E0DAA146069966823CA901C /* LayoutModels.swift */,
 				15D64F30CFA7A9C29E458FE4 /* LayoutStore.swift */,
@@ -181,9 +198,12 @@
 			files = (
 				60E28F807B38171B8B114523 /* AccessibilityClient.swift in Sources */,
 				EEF712B0259AC05191CDA019 /* AppModel.swift in Sources */,
+				FE1A71B0FC2C9E1096203FE4 /* CommandStatusStore.swift in Sources */,
 				013B8441CDB60D1455F342E9 /* DisplayInventory.swift in Sources */,
 				1A7599F4368973496ED6D7A9 /* DisplayMonitor.swift in Sources */,
 				BAA2F5AEA58C405E986532FF /* DisplayRecallApp.swift in Sources */,
+				7F091681C48ED60A9A127FDC /* DisplayRecallAppDelegate.swift in Sources */,
+				CBD1E652E5CA80DE78F38D37 /* DisplayRecallCommand.swift in Sources */,
 				8D7E8B4383E3212219FF78E4 /* LayoutMapper.swift in Sources */,
 				EDD85D016868B66D050C3C90 /* LayoutModels.swift in Sources */,
 				BBBBD9A798937CD5E087046E /* LayoutStore.swift in Sources */,
@@ -197,6 +217,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0FE9F959A5D77590754B51A3 /* CommandStatusStoreTests.swift in Sources */,
+				0A9986BA1886B29A5E38CB73 /* DisplayRecallCommandTests.swift in Sources */,
 				0B6753DF86D4A05D00202FCA /* DisplayTopologyTests.swift in Sources */,
 				B040BD8AD2C7985B71012D1A /* LayoutMapperTests.swift in Sources */,
 				FA42652C336E3BA51DF142F7 /* LayoutStoreTests.swift in Sources */,
@@ -249,7 +271,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -269,7 +291,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.7;
+				MARKETING_VERSION = 0.1.8;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -315,7 +337,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -329,7 +351,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.7;
+				MARKETING_VERSION = 0.1.8;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -346,11 +368,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = DisplayRecall;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Zomee Lee.";
+				INFOPLIST_FILE = Sources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -401,11 +419,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = DisplayRecall;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Zomee Lee.";
+				INFOPLIST_FILE = Sources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

@@ -56,6 +56,29 @@ macOS associates Accessibility authorization with the app's signing identity. A 
 3. Choose **Save Current Dual-Display Layout**.
 4. Connect another external display. DisplayRecall restores the saved layout proportionally.
 
+## Local command interface
+
+DisplayRecall 0.1.8 and later accepts local URL commands for Codex Skills, Shortcuts, and other on-device automation:
+
+    open -g "displayrecall://save?request=my-save"
+    open -g "displayrecall://restore?request=my-restore"
+    open -g "displayrecall://status?request=my-status"
+
+The installed DisplayRecall app executes commands with its existing Accessibility permission and writes machine-readable results to:
+
+    ~/Library/Application Support/com.zomeelee.DisplayRecall/command-status-v1.json
+
+The interface opens no network listener and does not bypass macOS Accessibility authorization.
+
+### Install the Codex Skill
+
+The repository includes an on-demand controller Skill. Install it into your personal Codex skills directory:
+
+    mkdir -p ~/.codex/skills
+    cp -R skills/displayrecall-window-layout ~/.codex/skills/
+
+Then invoke `$displayrecall-window-layout` to inspect readiness, save the current layout, or restore the remembered layout. The native menu bar app remains responsible for Accessibility access and automatic display hot-plug restoration.
+
 ## Known limitations
 
 - Only the built-in display plus one external display is supported in the first release.

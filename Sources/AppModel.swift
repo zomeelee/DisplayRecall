@@ -65,6 +65,7 @@ final class AppModel: ObservableObject {
     let store: LayoutStore
 
     private let defaults: UserDefaults
+    private let commandStatusStore: CommandStatusStore
     private let accessibility: AccessibilityClient
     private let displayInventory: DisplayInventory
     private let displayMonitor: DisplayMonitor
@@ -76,6 +77,7 @@ final class AppModel: ObservableObject {
     private var topologyWatchTask: Task<Void, Never>?
     private var wakeObserver: NSObjectProtocol?
     private var activationObserver: NSObjectProtocol?
+    private var commandURLObserver: NSObjectProtocol?
     private var started = false
     private var cooldownUntil = Date.distantPast
     private var observedTopologySignature = ""
@@ -91,7 +93,9 @@ final class AppModel: ObservableObject {
         accessibility = AccessibilityClient()
         displayInventory = DisplayInventory()
         displayMonitor = DisplayMonitor()
-        store = LayoutStore()
+        let layoutStore = LayoutStore()
+        store = layoutStore
+        commandStatusStore = CommandStatusStore(directoryURL: layoutStore.directoryURL)
         engine = RestoreEngine(accessibility: accessibility, displays: displayInventory)
 
         if defaults.object(forKey: Keys.autoRestore) == nil {
@@ -121,6 +125,9 @@ final class AppModel: ObservableObject {
         }
         if let activationObserver {
             NotificationCenter.default.removeObserver(activationObserver)
+        }
+        if let commandURLObserver {
+            NotificationCenter.default.removeObserver(commandURLObserver)
         }
     }
 
@@ -153,6 +160,19 @@ final class AppModel: ObservableObject {
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.refreshPermissionState()
+            }
+        }
+
+        commandURLObserver = NotificationCenter.default.addObserver(
+            forName: .displayRecallCommandURLReceived,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let url = notification.object as? URL else {
+                return
+            }
+            Task { @MainActor [weak self] in
+                self?.handleCommandURL(url)
             }
         }
 
@@ -205,30 +225,76 @@ final class AppModel: ObservableObject {
         pollForAccessibilityPermission()
     }
 
-    func saveCurrentLayout() {
+    @discardableResult
+    func saveCurrentLayout() -> Bool {
         guard phase == .idle || phase == .cooldown else {
             statusMessage = "显示器或窗口仍在变化，请稍后再保存"
-            return
+            return false
         }
 
         phase = .saving
+        var succeeded = false
         do {
             let snapshot = try engine.captureSnapshot()
             try store.save(snapshot)
             snapshotSummary = store.summary()
             statusMessage = "已保存 \(snapshot.windows.count) 个窗口；断开显示器后不会覆盖此布局"
+            succeeded = true
         } catch {
             statusMessage = error.localizedDescription
         }
         phase = .idle
         refresh()
+        return succeeded
     }
 
-    func restoreManually() {
+    func restoreManually(
+        completion: (@MainActor (RestoreReport?) -> Void)? = nil
+    ) {
         automaticRetryTask?.cancel()
         automaticRetryTask = nil
         Task { [weak self] in
-            await self?.restoreNow(trigger: "手动恢复")
+            let report = await self?.restoreNow(trigger: "手动恢复")
+            completion?(report)
+        }
+    }
+
+    func handleCommandURL(_ url: URL) {
+        guard let request = DisplayRecallCommandRequest(url: url) else {
+            logger.error("Rejected unsupported command URL")
+            return
+        }
+
+        switch request.action {
+        case .status:
+            refresh()
+            writeCommandStatus(
+                request: request,
+                state: .completed,
+                message: statusMessage
+            )
+        case .save:
+            let succeeded = saveCurrentLayout()
+            writeCommandStatus(
+                request: request,
+                state: succeeded ? .completed : .failed,
+                message: statusMessage
+            )
+        case .restore:
+            writeCommandStatus(
+                request: request,
+                state: .pending,
+                message: "已收到恢复命令，正在匹配窗口"
+            )
+            restoreManually { [weak self] report in
+                guard let self else { return }
+                self.writeCommandStatus(
+                    request: request,
+                    state: report == nil ? .failed : .completed,
+                    message: self.statusMessage,
+                    report: report
+                )
+            }
         }
     }
 
@@ -259,6 +325,35 @@ final class AppModel: ObservableObject {
         permissionGranted = accessibility.isTrusted
         if permissionGranted, !wasGranted {
             statusMessage = "辅助功能权限已启用，可以保存或恢复布局"
+        }
+    }
+
+    private func writeCommandStatus(
+        request: DisplayRecallCommandRequest,
+        state: DisplayRecallCommandStatus.State,
+        message: String,
+        report: RestoreReport? = nil
+    ) {
+        let summary = store.summary()
+        let status = DisplayRecallCommandStatus(
+            requestID: request.requestID,
+            command: request.action,
+            state: state,
+            message: message,
+            updatedAt: Date(),
+            permissionGranted: permissionGranted,
+            hasExternalDisplay: hasExternalDisplay,
+            savedWindowCount: summary?.windowCount,
+            savedAt: summary?.savedAt,
+            externalDisplayName: summary?.externalDisplayName,
+            matchedWindowCount: report?.matchedWindowCount,
+            restoredWindowCount: report?.restoredWindowCount,
+            failedWindowCount: report?.failedWindowCount
+        )
+        do {
+            try commandStatusStore.save(status)
+        } catch {
+            logger.error("Unable to save command status: \(error.localizedDescription, privacy: .public)")
         }
     }
 

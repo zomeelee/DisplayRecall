@@ -11,6 +11,16 @@ DisplayRecall is a small SwiftUI menu bar application built on public macOS fram
 5. `LayoutStore` atomically writes the current snapshot and one backup under Application Support.
 6. `DisplayMonitor` and `AppModel` debounce topology changes and perform delayed retries for apps that expose windows late.
 
+## Local command flow
+
+1. macOS routes `displayrecall://save`, `displayrecall://restore`, or `displayrecall://status` to the installed app.
+2. `DisplayRecallAppDelegate` forwards the URL to `AppModel`.
+3. `DisplayRecallCommandRequest` accepts only the supported action and an optional request UUID.
+4. `AppModel` performs the same save and restore paths used by the menu bar and background monitor.
+5. `CommandStatusStore` atomically overwrites `command-status-v1.json` with a pending, completed, or failed result.
+
+The URL scheme is a local control surface, not an authorization boundary. Commands never bypass macOS Accessibility permission, and the app does not open a network listener. Callers should generate a unique request UUID and wait only for the matching result.
+
 ## Coordinate model
 
 Saved window frames are normalized against `NSScreen.visibleFrame`, not the full display bounds. Restore maps those ratios into the target display's visible frame and then clamps the result. Additional policies handle menu bar safe areas, application minimum sizes, and Docks on different edges.

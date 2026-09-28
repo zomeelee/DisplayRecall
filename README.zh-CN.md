@@ -56,6 +56,29 @@ macOS 会把辅助功能授权与 App 的签名身份绑定。自行构建的版
 3. 点击“保存当前双屏布局”。
 4. 以后接入另一台外接显示器时，DisplayRecall 会按相对位置恢复窗口。
 
+## 本地命令接口
+
+DisplayRecall 0.1.8 起支持本地 URL 命令，供 Codex Skill、快捷指令或其他本机自动化调用：
+
+    open -g "displayrecall://save?request=my-save"
+    open -g "displayrecall://restore?request=my-restore"
+    open -g "displayrecall://status?request=my-status"
+
+命令会由已经获得辅助功能权限的 DisplayRecall App 执行。结果写入：
+
+    ~/Library/Application Support/com.zomeelee.DisplayRecall/command-status-v1.json
+
+接口不会开放网络端口，也不会绕过 macOS 辅助功能授权。
+
+### 安装 Codex Skill
+
+仓库内包含一个按需控制 DisplayRecall 的 Skill，可安装到个人 Codex Skill 目录：
+
+    mkdir -p ~/.codex/skills
+    cp -R skills/displayrecall-window-layout ~/.codex/skills/
+
+之后可调用 `$displayrecall-window-layout` 检查状态、保存当前布局或恢复已保存布局。辅助功能权限和显示器热插拔后的自动恢复仍由原生菜单栏 App 负责。
+
 ## 已知限制
 
 - 第一版只支持 Mac 内置屏加一台外接屏。
