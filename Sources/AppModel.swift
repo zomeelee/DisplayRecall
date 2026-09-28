@@ -25,6 +25,18 @@ enum AutomaticRestoreRetryPolicy {
     }
 }
 
+enum ImmediateRestorePassPolicy {
+    static func shouldStop(
+        usesReplacementDisplay: Bool,
+        report: RestoreReport
+    ) -> Bool {
+        guard usesReplacementDisplay else {
+            return true
+        }
+        return !report.needsAutomaticRetry
+    }
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     enum Phase: Equatable {
@@ -42,6 +54,10 @@ final class AppModel: ObservableObject {
             case .restoring: return "正在恢复"
             case .cooldown: return "恢复完成"
             }
+        }
+
+        var allowsManualRestore: Bool {
+            self == .idle || self == .cooldown
         }
     }
 
@@ -254,7 +270,15 @@ final class AppModel: ObservableObject {
         automaticRetryTask?.cancel()
         automaticRetryTask = nil
         Task { [weak self] in
-            let report = await self?.restoreNow(trigger: "手动恢复")
+            guard let self else {
+                completion?(nil)
+                return
+            }
+            guard await self.waitUntilManualRestoreCanStart() else {
+                completion?(nil)
+                return
+            }
+            let report = await self.restoreNow(trigger: "手动恢复")
             completion?(report)
         }
     }
@@ -326,6 +350,22 @@ final class AppModel: ObservableObject {
         if permissionGranted, !wasGranted {
             statusMessage = "辅助功能权限已启用，可以保存或恢复布局"
         }
+    }
+
+    private func waitUntilManualRestoreCanStart() async -> Bool {
+        for _ in 0..<240 {
+            if phase.allowsManualRestore {
+                return true
+            }
+            do {
+                try await Task.sleep(nanoseconds: 250_000_000)
+            } catch {
+                statusMessage = "手动恢复已取消"
+                return false
+            }
+        }
+        statusMessage = "等待当前显示器恢复结束超时，请稍后再试"
+        return false
     }
 
     private func writeCommandStatus(
@@ -590,8 +630,13 @@ final class AppModel: ObservableObject {
                     bestReport = report
                 }
 
-                if !usesReplacement ||
-                    (report.matchedWindowCount > 0 && report.failedWindowCount == 0) {
+                // During a display replacement, applications can republish their AX
+                // windows at different times. A partial match with no write failures is
+                // still partial and must not end the immediate correction passes.
+                if ImmediateRestorePassPolicy.shouldStop(
+                    usesReplacementDisplay: usesReplacement,
+                    report: report
+                ) {
                     break
                 }
             }

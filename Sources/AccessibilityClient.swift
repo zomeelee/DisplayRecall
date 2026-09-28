@@ -32,7 +32,10 @@ final class AccessibilityClient {
         return AXIsProcessTrustedWithOptions(options)
     }
 
-    func enumerateWindows(excludingBundleIdentifier excludedBundleID: String?) -> [LiveWindow] {
+    func enumerateWindows(
+        excludingBundleIdentifier excludedBundleID: String?,
+        includingBundleIdentifiers includedBundleIDs: Set<String>? = nil
+    ) -> [LiveWindow] {
         guard isTrusted else {
             return []
         }
@@ -41,7 +44,16 @@ final class AccessibilityClient {
         let runtimeWindowsByPID = captureRuntimeWindowIdentities()
         var claimedRuntimeWindowIDs = Set<CGWindowID>()
         let applications = NSWorkspace.shared.runningApplications
-            .filter { !$0.isTerminated && !$0.isHidden && $0.activationPolicy == .regular }
+            .filter { application in
+                guard !application.isTerminated,
+                      !application.isHidden,
+                      application.activationPolicy == .regular,
+                      let bundleIdentifier = application.bundleIdentifier,
+                      bundleIdentifier != excludedBundleID else {
+                    return false
+                }
+                return includedBundleIDs?.contains(bundleIdentifier) ?? true
+            }
             .sorted { ($0.localizedName ?? "") < ($1.localizedName ?? "") }
 
         logger.notice("Scanning \(applications.count) visible regular applications")
@@ -67,6 +79,9 @@ final class AccessibilityClient {
                 )
                 continue
             }
+            logger.debug(
+                "Window query for \(bundleIdentifier, privacy: .public) exposed \(windows.count) AX windows"
+            )
 
             var ordinal = 0
             for window in windows {

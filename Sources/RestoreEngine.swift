@@ -161,7 +161,9 @@ final class RestoreEngine {
             throw DisplayRecallError.externalDisplayRequired
         }
 
-        let liveWindows = accessibility.enumerateWindows(excludingBundleIdentifier: bundleIdentifier)
+        let liveWindows = accessibility.enumerateWindows(
+            excludingBundleIdentifier: bundleIdentifier
+        )
         var savedWindows: [SavedWindow] = []
 
         for window in liveWindows {
@@ -215,7 +217,13 @@ final class RestoreEngine {
             throw DisplayRecallError.externalDisplayRequired
         }
 
-        let liveWindows = accessibility.enumerateWindows(excludingBundleIdentifier: bundleIdentifier)
+        let savedBundleIdentifiers = Set(
+            snapshot.windows.map { $0.matchKey.bundleIdentifier }
+        )
+        let liveWindows = accessibility.enumerateWindows(
+            excludingBundleIdentifier: bundleIdentifier,
+            includingBundleIdentifiers: savedBundleIdentifiers
+        )
         let pairs = WindowMatcher.match(
             saved: snapshot.windows,
             liveKeys: liveWindows.map(\.matchKey)

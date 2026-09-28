@@ -177,6 +177,62 @@ final class DisplayTopologyTests: XCTestCase {
         XCTAssertFalse(AutomaticRestoreRetryPolicy.shouldRetry(report))
     }
 
+    func testReplacementDisplayImmediatePassContinuesForPartialResult() {
+        let report = RestoreReport(
+            savedWindowCount: 27,
+            matchedWindowCount: 12,
+            restoredWindowCount: 12,
+            failedWindowCount: 0
+        )
+
+        XCTAssertFalse(
+            ImmediateRestorePassPolicy.shouldStop(
+                usesReplacementDisplay: true,
+                report: report
+            )
+        )
+    }
+
+    func testReplacementDisplayImmediatePassStopsForCompleteResult() {
+        let report = RestoreReport(
+            savedWindowCount: 27,
+            matchedWindowCount: 27,
+            restoredWindowCount: 27,
+            failedWindowCount: 0
+        )
+
+        XCTAssertTrue(
+            ImmediateRestorePassPolicy.shouldStop(
+                usesReplacementDisplay: true,
+                report: report
+            )
+        )
+    }
+
+    func testSameDisplayManualRestoreKeepsSinglePassBehavior() {
+        let report = RestoreReport(
+            savedWindowCount: 27,
+            matchedWindowCount: 12,
+            restoredWindowCount: 12,
+            failedWindowCount: 0
+        )
+
+        XCTAssertTrue(
+            ImmediateRestorePassPolicy.shouldStop(
+                usesReplacementDisplay: false,
+                report: report
+            )
+        )
+    }
+
+    func testManualRestoreStartsOnlyWhenRestoreEngineIsAvailable() {
+        XCTAssertTrue(AppModel.Phase.idle.allowsManualRestore)
+        XCTAssertTrue(AppModel.Phase.cooldown.allowsManualRestore)
+        XCTAssertFalse(AppModel.Phase.settling.allowsManualRestore)
+        XCTAssertFalse(AppModel.Phase.saving.allowsManualRestore)
+        XCTAssertFalse(AppModel.Phase.restoring.allowsManualRestore)
+    }
+
     func testRefreshesConstraintWhenFullHeightTargetRemainsTooShort() {
         XCTAssertTrue(
             FullHeightConstraintRefreshPolicy.shouldRefresh(

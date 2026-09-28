@@ -6,6 +6,9 @@ All notable changes to DisplayRecall are documented here.
 
 - Added local command URLs for save, restore, and status operations.
 - Added machine-readable command results for Codex Skill integration.
+- Kept immediate replacement-display correction passes running until the saved layout is complete.
+- Limited restore-time Accessibility scans to applications present in the saved snapshot.
+- Queued manual and Skill restore requests while an automatic restore is still finishing.
 
 ## [0.1.7] - 2026-09-23
 
