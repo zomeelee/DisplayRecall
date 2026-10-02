@@ -36,10 +36,16 @@ struct RestoreReport: Equatable {
     }
 }
 
-enum FullHeightConstraintRefreshPolicy {
-    static func shouldRefresh(actual: CGRect, target: CGRect, displayFrame: CGRect) -> Bool {
-        target.height >= displayFrame.height - 32 &&
-            actual.height < target.height - 32
+enum SizeConstraintRefreshPolicy {
+    static func shouldRefresh(
+        actual: CGRect,
+        target: CGRect,
+        displayFrame: CGRect,
+        orientationChanged: Bool = false
+    ) -> Bool {
+        let targetIsFullHeight = target.height >= displayFrame.height - 32
+        let targetRemainsTooShort = actual.height < target.height - 32
+        return targetRemainsTooShort && (targetIsFullHeight || orientationChanged)
     }
 }
 
@@ -134,6 +140,7 @@ final class RestoreEngine {
         var targetDisplayFrame: CGRect
         var bundleIdentifier: String
         var ordinal: Int
+        var orientationChanged: Bool
     }
 
     private let accessibility: AccessibilityClient
@@ -253,9 +260,18 @@ final class RestoreEngine {
                 failed += 1
                 continue
             }
+            let sourceDisplay = snapshot.displays.first {
+                $0.slot == savedWindow.displaySlot
+            }
+            let sourceVisibleFrame = sourceDisplay?.visibleFrame.cgRect
+            let orientationChanged = LayoutMapper.requiresAxisSwap(
+                from: sourceVisibleFrame,
+                to: targetDisplay.axVisibleFrame
+            )
 
             let targetFrame = LayoutMapper.map(
                 savedWindow.normalizedFrame,
+                from: sourceVisibleFrame,
                 to: targetDisplay.axVisibleFrame
             )
             if !accessibility.unzoomIfNeeded(liveWindow.element) {
@@ -270,7 +286,8 @@ final class RestoreEngine {
                         target: targetFrame,
                         targetDisplayFrame: targetDisplay.axVisibleFrame,
                         bundleIdentifier: savedWindow.matchKey.bundleIdentifier,
-                        ordinal: savedWindow.matchKey.ordinal
+                        ordinal: savedWindow.matchKey.ordinal,
+                        orientationChanged: orientationChanged
                     )
                 )
             } else {
@@ -313,10 +330,11 @@ final class RestoreEngine {
             }
 
             if let actual = accessibility.frame(of: item.element),
-               FullHeightConstraintRefreshPolicy.shouldRefresh(
+               SizeConstraintRefreshPolicy.shouldRefresh(
                    actual: actual,
                    target: item.target,
-                   displayFrame: item.targetDisplayFrame
+                   displayFrame: item.targetDisplayFrame,
+                   orientationChanged: item.orientationChanged
                ),
                accessibility.refreshSizeConstraintByZooming(item.element) {
                 logger.notice(

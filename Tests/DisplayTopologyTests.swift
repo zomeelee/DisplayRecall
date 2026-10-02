@@ -235,7 +235,7 @@ final class DisplayTopologyTests: XCTestCase {
 
     func testRefreshesConstraintWhenFullHeightTargetRemainsTooShort() {
         XCTAssertTrue(
-            FullHeightConstraintRefreshPolicy.shouldRefresh(
+            SizeConstraintRefreshPolicy.shouldRefresh(
                 actual: CGRect(x: 1440, y: -209, width: 937, height: 870),
                 target: CGRect(x: 1440, y: -389, width: 937.5, height: 1050),
                 displayFrame: CGRect(x: 1440, y: -389, width: 1875, height: 1050)
@@ -245,10 +245,21 @@ final class DisplayTopologyTests: XCTestCase {
 
     func testDoesNotZoomRefreshOrdinaryWindowHeight() {
         XCTAssertFalse(
-            FullHeightConstraintRefreshPolicy.shouldRefresh(
+            SizeConstraintRefreshPolicy.shouldRefresh(
                 actual: CGRect(x: 1440, y: -120, width: 900, height: 650),
                 target: CGRect(x: 1440, y: -150, width: 900, height: 700),
                 displayFrame: CGRect(x: 1440, y: -389, width: 1875, height: 1050)
+            )
+        )
+    }
+
+    func testRefreshesConstraintForOrientationAdaptedHalfHeightWindow() {
+        XCTAssertTrue(
+            SizeConstraintRefreshPolicy.shouldRefresh(
+                actual: CGRect(x: 1440, y: 1271, width: 1401, height: 870),
+                target: CGRect(x: 1440, y: 876, width: 1358, height: 1265),
+                displayFrame: CGRect(x: 1440, y: -389, width: 1358, height: 2530),
+                orientationChanged: true
             )
         )
     }

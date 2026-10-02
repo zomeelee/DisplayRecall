@@ -9,6 +9,7 @@ All notable changes to DisplayRecall are documented here.
 - Kept immediate replacement-display correction passes running until the saved layout is complete.
 - Limited restore-time Accessibility scans to applications present in the saved snapshot.
 - Queued manual and Skill restore requests while an automatic restore is still finishing.
+- Adapted saved layouts across display orientation changes, mapping landscape left/right regions to portrait top/bottom regions and back again.
 
 ## [0.1.7] - 2026-09-23
 

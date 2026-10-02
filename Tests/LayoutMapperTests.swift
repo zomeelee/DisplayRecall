@@ -28,4 +28,56 @@ final class LayoutMapperTests: XCTestCase {
         XCTAssertEqual(result.width, 800, accuracy: 0.001)
         XCTAssertLessThanOrEqual(result.maxY, 800.001)
     }
+
+    func testMapsLandscapeLeftHalfToPortraitTopHalf() {
+        let result = LayoutMapper.map(
+            NormalizedFrame(x: 0, y: 0, width: 0.5, height: 1),
+            from: CGRect(x: 1440, y: -97, width: 1876, height: 1050),
+            to: CGRect(x: 1440, y: -419, width: 1358, height: 2560)
+        )
+
+        XCTAssertEqual(result.minX, 1440, accuracy: 0.001)
+        XCTAssertEqual(result.minY, -419, accuracy: 0.001)
+        XCTAssertEqual(result.width, 1358, accuracy: 0.001)
+        XCTAssertEqual(result.height, 1280, accuracy: 0.001)
+    }
+
+    func testMapsLandscapeRightHalfToPortraitBottomHalf() {
+        let result = LayoutMapper.map(
+            NormalizedFrame(x: 0.5, y: 0, width: 0.5, height: 1),
+            from: CGRect(x: 1440, y: -97, width: 1876, height: 1050),
+            to: CGRect(x: 1440, y: -419, width: 1358, height: 2560)
+        )
+
+        XCTAssertEqual(result.minX, 1440, accuracy: 0.001)
+        XCTAssertEqual(result.minY, 861, accuracy: 0.001)
+        XCTAssertEqual(result.width, 1358, accuracy: 0.001)
+        XCTAssertEqual(result.height, 1280, accuracy: 0.001)
+    }
+
+    func testMapsPortraitTopHalfBackToLandscapeLeftHalf() {
+        let result = LayoutMapper.map(
+            NormalizedFrame(x: 0, y: 0, width: 1, height: 0.5),
+            from: CGRect(x: 1440, y: -419, width: 1358, height: 2560),
+            to: CGRect(x: 1440, y: -97, width: 1876, height: 1050)
+        )
+
+        XCTAssertEqual(result.minX, 1440, accuracy: 0.001)
+        XCTAssertEqual(result.minY, -97, accuracy: 0.001)
+        XCTAssertEqual(result.width, 938, accuracy: 0.001)
+        XCTAssertEqual(result.height, 1050, accuracy: 0.001)
+    }
+
+    func testKeepsNormalizedAxesWhenOrientationDoesNotChange() {
+        let result = LayoutMapper.map(
+            NormalizedFrame(x: 0.5, y: 0, width: 0.5, height: 1),
+            from: CGRect(x: 0, y: 0, width: 1920, height: 1080),
+            to: CGRect(x: 100, y: 200, width: 2560, height: 1440)
+        )
+
+        XCTAssertEqual(result.minX, 1380, accuracy: 0.001)
+        XCTAssertEqual(result.minY, 200, accuracy: 0.001)
+        XCTAssertEqual(result.width, 1280, accuracy: 0.001)
+        XCTAssertEqual(result.height, 1440, accuracy: 0.001)
+    }
 }
